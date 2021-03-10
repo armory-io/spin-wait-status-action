@@ -1,0 +1,40 @@
+name: 'wait for specific status in spinnaker execution'
+description: 'This action keeps sending http calls to the execution controller until the response has the execution status tha we expect'
+author: 'armory-io'
+branding:
+  icon: 'aperture'
+  color: 'orange'
+inputs:
+  baseUrl:
+    required: true
+    description: 'URL of spinnaker'
+  application:
+    required: true
+    description: 'spinnaker application to search'
+  eventId:
+    required: true
+    description: 'eventID to search'
+  crtFile:
+    required: true
+    description: 'client crt file to auth'
+  keyFile:
+    required: true
+    description: 'client key file to auth'
+  passphrase:
+    required: true
+    description: 'passphrase string to auth'
+  statusExpected:
+    required: false
+    description: 'Expected status for execution'
+    default: 'SUCCEEDED'
+  interval:
+    required: false
+    description: 'interval time to check status'
+    default: '5000'
+  timeout:
+    required: false
+    description: 'max time to wait until timeout'
+    default: '1800000'
+runs:
+  using: 'node12'
+  main: 'dist/index.js'
