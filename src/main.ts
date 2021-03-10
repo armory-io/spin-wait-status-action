@@ -26,8 +26,8 @@ const run = async (): Promise<void> => {
     eventId,
     baseURL,
     url,
-    cert,
-    key,
+    certInput,
+    keyInput,
     passphrase,
     timeout,
     sleepTime
@@ -38,8 +38,8 @@ const run = async (): Promise<void> => {
     url = `/applications/${core.getInput('application', {
       required: true
     })}/executions/search`
-    cert = core.getInput('crtFile', {required: true})
-    key = core.getInput('keyFile', {required: true})
+    certInput = core.getInput('crtFile', {required: true})
+    keyInput = core.getInput('keyFile', {required: true})
     passphrase = core.getInput('passphrase', {required: true})
     timeout = +core.getInput('timeout')
     sleepTime = +core.getInput('interval')
@@ -52,6 +52,12 @@ const run = async (): Promise<void> => {
     core.setFailed(`Invalid execution status :${statusExpected}`)
     return
   }
+
+  const certBuff = Buffer.from(certInput, 'base64')
+  const cert = certBuff.toString('utf-8').replace(/\\n/gm, '\n')
+
+  const keyBuff = Buffer.from(keyInput, 'base64')
+  const key = keyBuff.toString('utf-8').replace(/\\n/gm, '\n')
 
   const instanceConfig = {
     baseURL,
@@ -68,7 +74,7 @@ const run = async (): Promise<void> => {
   const startTime = new Date()
   const timeoutTime = new Date(Date.now() + timeout)
 
-  core.debug(`current time ${startTime}, timeout time ${timeoutTime}`)
+  core.info(`current time ${startTime}, timeout time ${timeoutTime}`)
 
   const loop = true
   while (loop) {
@@ -78,7 +84,7 @@ const run = async (): Promise<void> => {
         core.setFailed(`Spinnaker execution not found for eventId:${eventId}`)
         return
       }
-      core.debug(
+      core.info(
         `Got Execution status ${response.data[0].status} from eventId=${eventId}`
       )
       if (response.data[0].status === statusExpected) {

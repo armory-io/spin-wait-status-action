@@ -6,38 +6,36 @@
 
 This action allows you to check the Execution Status of a pipeline in Spinnaker based on eventId.
 
-This action uses the x509 endpoint for Spinnaker, so it expects to have it configured in Spinnaker.
-
-Under de hook, the action stays in loop checking for the status expected in the execution using the eventId, the action 
-send a failure when the timeout is reached or an error if throw by the http call.
+Under the hood, the action stays in loop checking for the status expected in the execution using the eventId, the action 
+send a failure when the timeout is reached or if throw by the http call.
 
 ## Usage
 
 Add the following entry to your Github workflow YAML file with the required inputs: 
 
 ```yaml
-uses: armory-io/trigger-pipeline-action@v1
+uses: armory-io/spin-wait-status-action@master
 with:
   baseUrl: 'http://examplebaseUrl'
   application: 'example-app'
-  eventId: 'eventId to search'
-  crtFile: 'client.crt to auth'
-  keyFile: 'client.key to auth'
-  passphrase: 'passphrase to auth'
+  eventId: '7ab2d981-430a-44e9-8f4e-77f96593e004'
+  crtFile: 'SGVsbG8sIFdvcmxkIQ=='
+  keyFile: 'SGVsbG8sIFdvcmxkIQ=='
+  passphrase: 'passphrase'
 ```
 ### Required Inputs
 The following inputs are required to use this action:
 
 | Input | Description |
 | --- | --- |
-| `baseUrl` | Specifies the Spinnaker base url of Spinnaker (the x509 endpoint with port). |
+| `baseUrl` | Specifies the Spinnaker base url of Spinnaker. |
 | `application` | Specifies the application to search executions. |
 | `eventId` | Specifies the eventId to search execution. |
-| `crtFile` | Specifies client.crt to auth. |
-| `keyFile` | Specifies client.key to auth. |
+| `crtFile` | Specifies client.crt in base64. |
+| `keyFile` | Specifies client.key in base64. |
 | `passphrase` | Specifies passphrase to auth. |
 
-## Default Inputs
+### Default Inputs
 The following inputs has a default value to use this action:
 
 | Input | Description | Default |

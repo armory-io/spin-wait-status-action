@@ -58,7 +58,7 @@ var Statuses;
     Statuses["Buffered"] = "BUFFERED";
 })(Statuses || (Statuses = {}));
 const run = () => __awaiter(void 0, void 0, void 0, function* () {
-    let statusExpected, eventId, baseURL, url, cert, key, passphrase, timeout, sleepTime;
+    let statusExpected, eventId, baseURL, url, certInput, keyInput, passphrase, timeout, sleepTime;
     try {
         statusExpected = core.getInput('statusExpected');
         eventId = core.getInput('eventId', { required: true });
@@ -66,8 +66,8 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
         url = `/applications/${core.getInput('application', {
             required: true
         })}/executions/search`;
-        cert = core.getInput('crtFile', { required: true });
-        key = core.getInput('keyFile', { required: true });
+        certInput = core.getInput('crtFile', { required: true });
+        keyInput = core.getInput('keyFile', { required: true });
         passphrase = core.getInput('passphrase', { required: true });
         timeout = +core.getInput('timeout');
         sleepTime = +core.getInput('interval');
@@ -80,6 +80,10 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
         core.setFailed(`Invalid execution status :${statusExpected}`);
         return;
     }
+    const certBuff = Buffer.from(certInput, 'base64');
+    const cert = certBuff.toString('utf-8').replace(/\\n/gm, '\n');
+    const keyBuff = Buffer.from(keyInput, 'base64');
+    const key = keyBuff.toString('utf-8').replace(/\\n/gm, '\n');
     const instanceConfig = {
         baseURL,
         httpsAgent: new https.Agent({
@@ -92,7 +96,7 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
     const instance = axios_1.default.create(instanceConfig);
     const startTime = new Date();
     const timeoutTime = new Date(Date.now() + timeout);
-    core.debug(`current time ${startTime}, timeout time ${timeoutTime}`);
+    core.info(`current time ${startTime}, timeout time ${timeoutTime}`);
     const loop = true;
     while (loop) {
         try {
@@ -101,7 +105,7 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
                 core.setFailed(`Spinnaker execution not found for eventId:${eventId}`);
                 return;
             }
-            core.debug(`Got Execution status ${response.data[0].status} from eventId=${eventId}`);
+            core.info(`Got Execution status ${response.data[0].status} from eventId=${eventId}`);
             if (response.data[0].status === statusExpected) {
                 return;
             }
