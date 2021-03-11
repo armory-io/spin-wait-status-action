@@ -9,6 +9,8 @@ This action allows you to check the Execution Status of a pipeline in Spinnaker 
 Under the hood, the action stays in loop checking for the status expected in the execution using the eventId, the action 
 send a failure when the timeout is reached or if throw by the http call.
 
+if a terminal status (TERMINAL, STOPPER, CANCELED) is found instead fo the desired status, the action is mark as failure
+
 ## Usage
 
 Add the following entry to your Github workflow YAML file with the required inputs: 

@@ -19,6 +19,7 @@ enum Statuses {
 
 interface Execution {
   status: string
+  id: string
 }
 
 const run = async (): Promise<void> => {
@@ -88,6 +89,17 @@ const run = async (): Promise<void> => {
         `Got Execution status ${response.data[0].status} from eventId=${eventId}`
       )
       if (response.data[0].status === statusExpected) {
+        return
+      }
+
+      if (
+        response.data[0].status === Statuses.Terminal ||
+        response.data[0].status === Statuses.Canceled ||
+        response.data[0].status === Statuses.Stopped
+      ) {
+        core.setFailed(
+          `the execution:${response.data[0].id} finished with status:${response.data[0].status}`
+        )
         return
       }
     } catch (error) {
