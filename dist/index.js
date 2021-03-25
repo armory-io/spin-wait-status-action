@@ -58,7 +58,7 @@ var Statuses;
     Statuses["Buffered"] = "BUFFERED";
 })(Statuses || (Statuses = {}));
 const run = () => __awaiter(void 0, void 0, void 0, function* () {
-    let statusExpected, eventId, baseURL, url, certInput, keyInput, passphrase, timeout, sleepTime;
+    let statusExpected, eventId, baseURL, url, certInput, keyInput, timeout, sleepTime;
     try {
         statusExpected = core.getInput('statusExpected');
         eventId = core.getInput('eventId', { required: true });
@@ -68,7 +68,6 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
         })}/executions/search`;
         certInput = core.getInput('crtFile', { required: true });
         keyInput = core.getInput('keyFile', { required: true });
-        passphrase = core.getInput('passphrase', { required: true });
         timeout = +core.getInput('timeout');
         sleepTime = +core.getInput('interval');
     }
@@ -80,16 +79,23 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
         core.setFailed(`Invalid execution status :${statusExpected}`);
         return;
     }
-    const certBuff = Buffer.from(certInput, 'base64');
-    const cert = certBuff.toString('utf-8').replace(/\\n/gm, '\n');
-    const keyBuff = Buffer.from(keyInput, 'base64');
-    const key = keyBuff.toString('utf-8').replace(/\\n/gm, '\n');
+    let cert, key;
+    if (core.getInput('isEncoded')) {
+        const certBuff = Buffer.from(certInput, 'base64');
+        cert = certBuff.toString('utf-8').replace(/\\n/gm, '\n');
+        const keyBuff = Buffer.from(keyInput, 'base64');
+        key = keyBuff.toString('utf-8').replace(/\\n/gm, '\n');
+    }
+    else {
+        cert = certInput.replace(/\\n/gm, '\n');
+        key = keyInput.replace(/\\n/gm, '\n');
+    }
     const instanceConfig = {
         baseURL,
         httpsAgent: new https.Agent({
             cert,
             key,
-            passphrase,
+            passphrase: core.getInput('passphrase'),
             rejectUnauthorized: false
         })
     };
@@ -109,7 +115,9 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
             if (response.data[0].status === statusExpected) {
                 return;
             }
-            if (response.data[0].status === Statuses.Terminal || response.data[0].status === Statuses.Canceled || response.data[0].status === Statuses.Stopped) {
+            if (response.data[0].status === Statuses.Terminal ||
+                response.data[0].status === Statuses.Canceled ||
+                response.data[0].status === Statuses.Stopped) {
                 core.setFailed(`the execution:${response.data[0].id} finished with status:${response.data[0].status}`);
                 return;
             }

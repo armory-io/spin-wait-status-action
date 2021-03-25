@@ -21,7 +21,7 @@ inputs:
     required: true
     description: 'client key file to auth'
   passphrase:
-    required: true
+    required: false
     description: 'passphrase string to auth'
   statusExpected:
     required: false
@@ -35,6 +35,9 @@ inputs:
     required: false
     description: 'max time to wait until timeout'
     default: '1800000'
+  isEncoded:
+    required: false
+    description: 'specifies if the cert files needs to be decoded'
 runs:
   using: 'node12'
   main: 'dist/index.js'

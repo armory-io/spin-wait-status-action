@@ -29,7 +29,6 @@ const run = async (): Promise<void> => {
     url,
     certInput,
     keyInput,
-    passphrase,
     timeout,
     sleepTime
   try {
@@ -41,7 +40,6 @@ const run = async (): Promise<void> => {
     })}/executions/search`
     certInput = core.getInput('crtFile', {required: true})
     keyInput = core.getInput('keyFile', {required: true})
-    passphrase = core.getInput('passphrase', {required: true})
     timeout = +core.getInput('timeout')
     sleepTime = +core.getInput('interval')
   } catch (error) {
@@ -54,18 +52,25 @@ const run = async (): Promise<void> => {
     return
   }
 
-  const certBuff = Buffer.from(certInput, 'base64')
-  const cert = certBuff.toString('utf-8').replace(/\\n/gm, '\n')
+  let cert, key
 
-  const keyBuff = Buffer.from(keyInput, 'base64')
-  const key = keyBuff.toString('utf-8').replace(/\\n/gm, '\n')
+  if (core.getInput('isEncoded')) {
+    const certBuff = Buffer.from(certInput, 'base64')
+    cert = certBuff.toString('utf-8').replace(/\\n/gm, '\n')
+
+    const keyBuff = Buffer.from(keyInput, 'base64')
+    key = keyBuff.toString('utf-8').replace(/\\n/gm, '\n')
+  } else {
+    cert = certInput.replace(/\\n/gm, '\n')
+    key = keyInput.replace(/\\n/gm, '\n')
+  }
 
   const instanceConfig = {
     baseURL,
     httpsAgent: new https.Agent({
       cert,
       key,
-      passphrase,
+      passphrase: core.getInput('passphrase'),
       rejectUnauthorized: false
     })
   }
