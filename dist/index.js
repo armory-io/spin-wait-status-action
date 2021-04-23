@@ -58,7 +58,7 @@ var Statuses;
     Statuses["Buffered"] = "BUFFERED";
 })(Statuses || (Statuses = {}));
 const run = () => __awaiter(void 0, void 0, void 0, function* () {
-    let statusExpected, eventId, baseURL, url, certInput, keyInput, timeout, sleepTime;
+    let statusExpected, eventId, baseURL, url, certInput, keyInput, timeout, sleepTime, maxInitialRetry;
     try {
         statusExpected = core.getInput('statusExpected');
         eventId = core.getInput('eventId', { required: true });
@@ -70,6 +70,7 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
         keyInput = core.getInput('keyFile', { required: true });
         timeout = +core.getInput('timeout');
         sleepTime = +core.getInput('interval');
+        maxInitialRetry = +core.getInput('initialWaitCount');
     }
     catch (error) {
         core.setFailed(error.message);
@@ -104,22 +105,31 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
     const timeoutTime = new Date(Date.now() + timeout);
     core.info(`current time ${startTime}, timeout time ${timeoutTime}`);
     const loop = true;
+    let initialWaitCount = 0;
     while (loop) {
         try {
             const response = yield instance.get(url, { params: { eventId } });
             if (response.data.length === 0) {
-                core.setFailed(`Spinnaker execution not found for eventId:${eventId}`);
-                return;
+                if (initialWaitCount >= maxInitialRetry) {
+                    core.setFailed(`Spinnaker execution not found for eventId:${eventId} after ${maxInitialRetry} retries`);
+                    return;
+                }
+                else {
+                    initialWaitCount++;
+                    core.info(`the execution is still not available, retrying...`);
+                }
             }
-            core.info(`Got Execution status ${response.data[0].status} from eventId=${eventId}`);
-            if (response.data[0].status === statusExpected) {
-                return;
-            }
-            if (response.data[0].status === Statuses.Terminal ||
-                response.data[0].status === Statuses.Canceled ||
-                response.data[0].status === Statuses.Stopped) {
-                core.setFailed(`the execution:${response.data[0].id} finished with status:${response.data[0].status}`);
-                return;
+            else {
+                core.info(`Got Execution status ${response.data[0].status} from eventId=${eventId}`);
+                if (response.data[0].status === statusExpected) {
+                    return;
+                }
+                if (response.data[0].status === Statuses.Terminal ||
+                    response.data[0].status === Statuses.Canceled ||
+                    response.data[0].status === Statuses.Stopped) {
+                    core.setFailed(`the execution:${response.data[0].id} finished with status:${response.data[0].status}`);
+                    return;
+                }
             }
         }
         catch (error) {

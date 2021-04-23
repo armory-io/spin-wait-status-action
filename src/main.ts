@@ -30,7 +30,8 @@ const run = async (): Promise<void> => {
     certInput,
     keyInput,
     timeout,
-    sleepTime
+    sleepTime,
+    maxInitialRetry
   try {
     statusExpected = core.getInput('statusExpected') as Statuses
     eventId = core.getInput('eventId', {required: true})
@@ -42,6 +43,7 @@ const run = async (): Promise<void> => {
     keyInput = core.getInput('keyFile', {required: true})
     timeout = +core.getInput('timeout')
     sleepTime = +core.getInput('interval')
+    maxInitialRetry = +core.getInput('initialWaitCount')
   } catch (error) {
     core.setFailed(error.message)
     return
@@ -83,29 +85,38 @@ const run = async (): Promise<void> => {
   core.info(`current time ${startTime}, timeout time ${timeoutTime}`)
 
   const loop = true
+  let initialWaitCount = 0
   while (loop) {
     try {
       const response = await instance.get<Execution[]>(url, {params: {eventId}})
       if (response.data.length === 0) {
-        core.setFailed(`Spinnaker execution not found for eventId:${eventId}`)
-        return
-      }
-      core.info(
-        `Got Execution status ${response.data[0].status} from eventId=${eventId}`
-      )
-      if (response.data[0].status === statusExpected) {
-        return
-      }
-
-      if (
-        response.data[0].status === Statuses.Terminal ||
-        response.data[0].status === Statuses.Canceled ||
-        response.data[0].status === Statuses.Stopped
-      ) {
-        core.setFailed(
-          `the execution:${response.data[0].id} finished with status:${response.data[0].status}`
+        if (initialWaitCount >= maxInitialRetry) {
+          core.setFailed(
+            `Spinnaker execution not found for eventId:${eventId} after ${maxInitialRetry} retries`
+          )
+          return
+        } else {
+          initialWaitCount++
+          core.info(`the execution is still not available, retrying...`)
+        }
+      } else {
+        core.info(
+          `Got Execution status ${response.data[0].status} from eventId=${eventId}`
         )
-        return
+        if (response.data[0].status === statusExpected) {
+          return
+        }
+
+        if (
+          response.data[0].status === Statuses.Terminal ||
+          response.data[0].status === Statuses.Canceled ||
+          response.data[0].status === Statuses.Stopped
+        ) {
+          core.setFailed(
+            `the execution:${response.data[0].id} finished with status:${response.data[0].status}`
+          )
+          return
+        }
       }
     } catch (error) {
       if (error.response) {
