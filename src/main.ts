@@ -120,8 +120,9 @@ const run = async (): Promise<void> => {
       }
     } catch (error) {
       if (error.response) {
+        const errorData = JSON.stringify(error.response.data, null, 2)
         core.setFailed(
-          `got error from Spinnaker, status:${error.response.status}, data: ${error.response.data}`
+          `got error from Spinnaker, status:${error.response.status}, data: ${errorData}`
         )
       } else {
         core.setFailed(`got error from Spinnaker, error: ${error.message}`)
