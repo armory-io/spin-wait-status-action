@@ -38,10 +38,6 @@ inputs:
   isEncoded:
     required: false
     description: 'specifies if the cert files needs to be decoded'
-  initialWaitCount:
-    required: false
-    description: 'specifies the max retry count to wait until the execution is available'
-    default: '10'
 runs:
   using: 'node12'
   main: 'dist/index.js'
