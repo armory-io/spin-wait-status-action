@@ -39,9 +39,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Statuses = void 0;
 const core = __importStar(__webpack_require__(2186));
 const axios_1 = __importDefault(__webpack_require__(6545));
 const https = __importStar(__webpack_require__(7211));
+const waitForPipeline_1 = __webpack_require__(9805);
 var Statuses;
 (function (Statuses) {
     Statuses["NotStarted"] = "NOT_STARTED";
@@ -56,9 +58,9 @@ var Statuses;
     Statuses["Stopped"] = "STOPPED";
     Statuses["Skipped"] = "SKIPPED";
     Statuses["Buffered"] = "BUFFERED";
-})(Statuses || (Statuses = {}));
+})(Statuses = exports.Statuses || (exports.Statuses = {}));
 const run = () => __awaiter(void 0, void 0, void 0, function* () {
-    let statusExpected, eventId, baseURL, url, certInput, keyInput, timeout, sleepTime, maxInitialRetry;
+    let statusExpected, eventId, baseURL, url, certInput, keyInput, timeout, sleepTime;
     try {
         statusExpected = core.getInput('statusExpected');
         eventId = core.getInput('eventId', { required: true });
@@ -70,7 +72,6 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
         keyInput = core.getInput('keyFile', { required: true });
         timeout = +core.getInput('timeout');
         sleepTime = +core.getInput('interval');
-        maxInitialRetry = +core.getInput('initialWaitCount');
     }
     catch (error) {
         core.setFailed(error.message);
@@ -101,59 +102,76 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
         })
     };
     const instance = axios_1.default.create(instanceConfig);
-    const startTime = new Date();
-    const timeoutTime = new Date(Date.now() + timeout);
-    core.info(`current time ${startTime}, timeout time ${timeoutTime}`);
-    const loop = true;
-    let initialWaitCount = 0;
-    while (loop) {
-        try {
-            const response = yield instance.get(url, { params: { eventId } });
-            if (response.data.length === 0) {
-                if (initialWaitCount >= maxInitialRetry) {
-                    core.setFailed(`Spinnaker execution not found for eventId:${eventId} after ${maxInitialRetry} retries`);
-                    return;
-                }
-                else {
-                    initialWaitCount++;
-                    core.info(`the execution is still not available, retrying...`);
-                }
-            }
-            else {
-                core.info(`Got Execution status ${response.data[0].status} from eventId=${eventId}`);
-                if (response.data[0].status === statusExpected) {
-                    return;
-                }
-                if (response.data[0].status === Statuses.Terminal ||
-                    response.data[0].status === Statuses.Canceled ||
-                    response.data[0].status === Statuses.Stopped) {
-                    core.setFailed(`the execution:${response.data[0].id} finished with status:${response.data[0].status}`);
-                    return;
-                }
-            }
-        }
-        catch (error) {
-            if (error.response) {
-                const errorData = JSON.stringify(error.response.data, null, 2);
-                core.setFailed(`got error from Spinnaker, status:${error.response.status}, data: ${errorData}`);
-            }
-            else {
-                core.setFailed(`got error from Spinnaker, error: ${error.message}`);
-            }
+    try {
+        const status = yield waitForPipeline_1.WaitUntilPipelineCompleteOrTimeout(url, eventId, timeout, sleepTime, new Date(), instance);
+        if (status !== statusExpected) {
+            core.setFailed(`the execution with eventId:${eventId} finished with status:${status}`);
             return;
         }
-        core.debug(`waiting ${sleepTime} ms until check status`);
-        yield delay(sleepTime);
-        if (new Date() > timeoutTime) {
-            core.setFailed(`Timeout reached, startTime: ${startTime}, timeout: ${timeoutTime}`);
-            return;
-        }
+        core.info(`Execution finished with status:${status}`);
+    }
+    catch (error) {
+        core.setFailed(`Timeout reached waiting for execution with eventId:${eventId}`);
     }
 });
+run();
+
+
+/***/ }),
+
+/***/ 9805:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.WaitUntilPipelineCompleteOrTimeout = void 0;
+const main_1 = __webpack_require__(3109);
+function WaitUntilPipelineCompleteOrTimeout(url, eventId, timeout, sleep, initialTime, client) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (new Date().getTime() - initialTime.getTime() <= timeout) {
+            try {
+                const response = yield client.get(url, { params: { eventId } });
+                if (response.data.length !== 0 &&
+                    isPipelineCompleted(response.data[0].status)) {
+                    return Promise.resolve(response.data[0].status);
+                }
+                yield delay(sleep);
+                return WaitUntilPipelineCompleteOrTimeout(url, eventId, timeout, sleep, initialTime, client);
+            }
+            catch (e) {
+                yield delay(sleep);
+                return WaitUntilPipelineCompleteOrTimeout(url, eventId, timeout, sleep, initialTime, client);
+            }
+        }
+        else {
+            return Promise.reject(new Error('Timeout waiting for pipeline'));
+        }
+    });
+}
+exports.WaitUntilPipelineCompleteOrTimeout = WaitUntilPipelineCompleteOrTimeout;
+function isPipelineCompleted(status) {
+    switch (status) {
+        case main_1.Statuses.Succeded:
+        case main_1.Statuses.Terminal:
+        case main_1.Statuses.Canceled:
+        case main_1.Statuses.Stopped:
+            return true;
+    }
+    return false;
+}
 const delay = (ms) => __awaiter(void 0, void 0, void 0, function* () {
     return new Promise(resolve => setTimeout(resolve, ms));
 });
-run();
 
 
 /***/ }),
