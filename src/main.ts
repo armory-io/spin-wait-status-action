@@ -1,14 +1,14 @@
 import * as core from '@actions/core'
 import axios from 'axios'
 import * as https from 'https'
-import {WaitUntilPipelineCompleteOrTimeout} from './waitForPipeline'
+import {waitUntilPipelineCompleteOrTimeout} from './waitForPipeline'
 
 export enum Statuses {
   NotStarted = 'NOT_STARTED',
   Running = 'RUNNING',
   Paused = 'PAUSED',
   Suspended = 'SUSPENDED',
-  Succeded = 'SUCCEEDED',
+  Succeeded = 'SUCCEEDED',
   FailedContinue = 'FAILED_CONTINUE',
   Terminal = 'TERMINAL',
   Canceled = 'CANCELED',
@@ -79,7 +79,7 @@ const run = async (): Promise<void> => {
   const instance = axios.create(instanceConfig)
 
   try {
-    const status = await WaitUntilPipelineCompleteOrTimeout(
+    const status = await waitUntilPipelineCompleteOrTimeout(
       url,
       eventId,
       timeout,

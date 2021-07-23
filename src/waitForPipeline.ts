@@ -1,7 +1,7 @@
 import {Execution, Statuses} from './main'
 import {AxiosInstance} from 'axios'
 
-export async function WaitUntilPipelineCompleteOrTimeout(
+export async function waitUntilPipelineCompleteOrTimeout(
   url: string,
   eventId: string,
   timeout: number,
@@ -19,7 +19,7 @@ export async function WaitUntilPipelineCompleteOrTimeout(
         return Promise.resolve(response.data[0].status)
       }
       await delay(sleep)
-      return WaitUntilPipelineCompleteOrTimeout(
+      return waitUntilPipelineCompleteOrTimeout(
         url,
         eventId,
         timeout,
@@ -27,9 +27,9 @@ export async function WaitUntilPipelineCompleteOrTimeout(
         initialTime,
         client
       )
-    } catch (e) {
+    } catch {
       await delay(sleep)
-      return WaitUntilPipelineCompleteOrTimeout(
+      return waitUntilPipelineCompleteOrTimeout(
         url,
         eventId,
         timeout,
@@ -39,13 +39,13 @@ export async function WaitUntilPipelineCompleteOrTimeout(
       )
     }
   } else {
-    return Promise.reject(new Error('Timeout waiting for pipeline'))
+    throw new Error('Timeout waiting for pipeline')
   }
 }
 
 function isPipelineCompleted(status: string): boolean {
   switch (status) {
-    case Statuses.Succeded:
+    case Statuses.Succeeded:
     case Statuses.Terminal:
     case Statuses.Canceled:
     case Statuses.Stopped:

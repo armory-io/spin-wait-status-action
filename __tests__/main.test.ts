@@ -1,4 +1,4 @@
-import {WaitUntilPipelineCompleteOrTimeout} from '../src/waitForPipeline'
+import {waitUntilPipelineCompleteOrTimeout} from '../src/waitForPipeline'
 import {Statuses} from '../src/main'
 import MockAdapter from 'axios-mock-adapter'
 import axios from 'axios'
@@ -36,7 +36,7 @@ test('wait until pipeline finish with status succeeded', async () => {
     .replyOnce(200, running)
     .onGet(mockUrl)
     .replyOnce(200, success)
-  const result = await WaitUntilPipelineCompleteOrTimeout(
+  const result = await waitUntilPipelineCompleteOrTimeout(
     '/test',
     '123',
     1000,
@@ -44,7 +44,7 @@ test('wait until pipeline finish with status succeeded', async () => {
     new Date(),
     instance
   )
-  expect(result).toBe(Statuses.Succeded)
+  expect(result).toBe(Statuses.Succeeded)
 })
 
 test('wait until pipeline finish with arbitrary errors', async () => {
@@ -63,7 +63,7 @@ test('wait until pipeline finish with arbitrary errors', async () => {
     .replyOnce(200, running)
     .onGet(mockUrl)
     .replyOnce(200, success)
-  const result = await WaitUntilPipelineCompleteOrTimeout(
+  const result = await waitUntilPipelineCompleteOrTimeout(
     '/test',
     '123',
     1000,
@@ -71,7 +71,7 @@ test('wait until pipeline finish with arbitrary errors', async () => {
     new Date(),
     instance
   )
-  expect(result).toBe(Statuses.Succeded)
+  expect(result).toBe(Statuses.Succeeded)
 })
 
 test('timeout if execution does not finish', async () => {
@@ -79,7 +79,7 @@ test('timeout if execution does not finish', async () => {
   const mock = new MockAdapter(instance)
   mock.onGet(mockUrl).reply(200, running)
   try {
-    const result = await WaitUntilPipelineCompleteOrTimeout(
+    const result = await waitUntilPipelineCompleteOrTimeout(
       '/test',
       '123',
       1000,

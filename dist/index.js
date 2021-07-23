@@ -50,7 +50,7 @@ var Statuses;
     Statuses["Running"] = "RUNNING";
     Statuses["Paused"] = "PAUSED";
     Statuses["Suspended"] = "SUSPENDED";
-    Statuses["Succeded"] = "SUCCEEDED";
+    Statuses["Succeeded"] = "SUCCEEDED";
     Statuses["FailedContinue"] = "FAILED_CONTINUE";
     Statuses["Terminal"] = "TERMINAL";
     Statuses["Canceled"] = "CANCELED";
@@ -103,7 +103,7 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
     };
     const instance = axios_1.default.create(instanceConfig);
     try {
-        const status = yield waitForPipeline_1.WaitUntilPipelineCompleteOrTimeout(url, eventId, timeout, sleepTime, new Date(), instance);
+        const status = yield waitForPipeline_1.waitUntilPipelineCompleteOrTimeout(url, eventId, timeout, sleepTime, new Date(), instance);
         if (status !== statusExpected) {
             core.setFailed(`the execution with eventId:${eventId} finished with status:${status}`);
             return;
@@ -134,9 +134,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.WaitUntilPipelineCompleteOrTimeout = void 0;
+exports.waitUntilPipelineCompleteOrTimeout = void 0;
 const main_1 = __webpack_require__(3109);
-function WaitUntilPipelineCompleteOrTimeout(url, eventId, timeout, sleep, initialTime, client) {
+function waitUntilPipelineCompleteOrTimeout(url, eventId, timeout, sleep, initialTime, client) {
     return __awaiter(this, void 0, void 0, function* () {
         if (new Date().getTime() - initialTime.getTime() <= timeout) {
             try {
@@ -146,22 +146,22 @@ function WaitUntilPipelineCompleteOrTimeout(url, eventId, timeout, sleep, initia
                     return Promise.resolve(response.data[0].status);
                 }
                 yield delay(sleep);
-                return WaitUntilPipelineCompleteOrTimeout(url, eventId, timeout, sleep, initialTime, client);
+                return waitUntilPipelineCompleteOrTimeout(url, eventId, timeout, sleep, initialTime, client);
             }
-            catch (e) {
+            catch (_a) {
                 yield delay(sleep);
-                return WaitUntilPipelineCompleteOrTimeout(url, eventId, timeout, sleep, initialTime, client);
+                return waitUntilPipelineCompleteOrTimeout(url, eventId, timeout, sleep, initialTime, client);
             }
         }
         else {
-            return Promise.reject(new Error('Timeout waiting for pipeline'));
+            throw new Error('Timeout waiting for pipeline');
         }
     });
 }
-exports.WaitUntilPipelineCompleteOrTimeout = WaitUntilPipelineCompleteOrTimeout;
+exports.waitUntilPipelineCompleteOrTimeout = waitUntilPipelineCompleteOrTimeout;
 function isPipelineCompleted(status) {
     switch (status) {
-        case main_1.Statuses.Succeded:
+        case main_1.Statuses.Succeeded:
         case main_1.Statuses.Terminal:
         case main_1.Statuses.Canceled:
         case main_1.Statuses.Stopped:
