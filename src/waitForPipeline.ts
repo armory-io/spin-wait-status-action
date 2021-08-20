@@ -1,6 +1,5 @@
 import {Execution, Statuses} from './main'
 import {AxiosInstance} from 'axios'
-import * as core from '@actions/core'
 
 export async function waitUntilPipelineCompleteOrTimeout(
   url: string,
@@ -21,7 +20,6 @@ export async function waitUntilPipelineCompleteOrTimeout(
       ) {
         return Promise.resolve(response.data[0].status)
       }
-      core.info(`got execution status: ${JSON.stringify(response)}`)
       await delay(sleep)
       return waitUntilPipelineCompleteOrTimeout(
         url,
@@ -31,8 +29,7 @@ export async function waitUntilPipelineCompleteOrTimeout(
         initialTime,
         client
       )
-    } catch (error) {
-      core.warning(`got spinnaker error: ${JSON.stringify(error)}`)
+    } catch {
       await delay(sleep)
       return waitUntilPipelineCompleteOrTimeout(
         url,
